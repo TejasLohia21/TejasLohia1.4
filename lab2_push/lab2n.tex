@@ -1,0 +1,521 @@
+\documentclass[12pt,a4paper]{article}
+
+%------------------------------------------------
+% Packages
+%------------------------------------------------
+\usepackage[margin=1in]{geometry}
+\usepackage{setspace}
+\usepackage{lmodern}
+\usepackage[T1]{fontenc}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{ragged2e}
+\usepackage{parskip} % no paragraph indent, adds space
+\usepackage{caption}
+\usepackage{fancyhdr}
+\usepackage{listings}
+\usepackage{tabularx}
+\usepackage{pdflscape}
+\usepackage{graphicx}
+\usepackage{array}
+\usepackage{subcaption}
+\usepackage{float}   % add this in the preamble
+\usepackage{placeins} % for \FloatBarrier
+\lstset{
+    language=Python,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue},
+    stringstyle=\color{brown},
+    commentstyle=\color{teal},
+    showstringspaces=false,
+    breaklines=true,
+    frame=single,
+    numbers=left,
+    numberstyle=\tiny,
+    xleftmargin=2em,
+    framexleftmargin=1.5em
+}
+
+%------------------------------------------------
+% Colors and styles
+%------------------------------------------------
+\definecolor{sectionbar}{HTML}{E9A640} % orange bar color similar to the image
+\definecolor{sectiontext}{HTML}{2B2B2B}
+
+% Wide, colored bar style for "section-like" headers
+\newcommand{\sectionbar}[1]{%
+  \vspace{0.6\baselineskip}%
+  \noindent
+  \colorbox{sectionbar}{%
+    \parbox{\dimexpr\linewidth-2\fboxsep\relax}{%
+      \textbf{\Large\textsf{#1}}%
+    }%
+  }%
+  \vspace{0.6\baselineskip}
+}
+
+% Body text tweaks
+\setstretch{1.1}
+\setlist[itemize]{leftmargin=1.2em}
+\setlist[enumerate]{leftmargin=1.2em}
+
+% Section title spacing (not used directly since we use custom bars)
+\titlespacing*{\section}{0pt}{1ex}{0.6ex}
+
+% Figure captions smaller and tight
+\captionsetup{font=small,labelfont=bf}
+
+% Footer with page number
+\pagestyle{fancy}
+\fancyhf{}
+\cfoot{\thepage}
+
+%------------------------------------------------
+\begin{document}
+
+%================================================
+% LABORATORY SESSION 1
+%================================================
+\sectionbar{LABORATORY SESSION 2}
+
+
+%---------------- INTRODUCTION -------------------
+\sectionbar{INTRODUCTION}
+The aim of this laboratory session is to provide familiarity with the basics of mining open source software (OSS) repositories. 
+The process involves processing and analyzing commits on the GitHub version control system for popular real-world projects. 
+This lab also introduces a framework for understanding how developers approach bug-fixing commits.
+
+%---------------- SETUP --------------------------
+\sectionbar{SETUP}
+
+\begin{itemize}
+    \item \textbf{Software and Tools Used:}
+    \begin{itemize}
+        \item Operating System: MacOS
+        \item Text Editor: Visual Studio Code
+        \item Version Control: git
+        \item Remote Hosting: GitHub
+        \item Continuous Integration: GitHub Actions
+    \end{itemize}
+    \item \textbf{Python Libraries:}
+    \begin{itemize}
+        \item Pydriller: A Python framework for mining software repositories. Used to analyze git repositories and extract commit information.
+        \item Pandas: To manage dataframes and dealing with CSV files
+        \item PreTrained LLMs: \texttt{SEBIS\/code\_trans\_t5\_base\_commit\_generation} and \texttt{CommitPredictorT5}
+    \end{itemize}
+    \item \textbf{Initial Steps:}
+    \begin{itemize}
+        \item GitHub account: TejasLohia21
+        \item SSH key configured for secure push/pull
+        \item Virtual Environment named lab2 to manage library versions
+        \item Installed Python 3.12.9
+        \item Configured git username and email
+        \item Cloned/initialized three repository
+    \end{itemize}
+\end{itemize}
+
+\newpage
+%------------- METHODOLOGY AND EXECUTION ---------
+\sectionbar{METHODOLOGY AND EXECUTION}
+
+\subsection*{Part A: Repository selection}
+\begin{itemize}
+        \item \texttt{Boxmot} -- Boxmot is a modular and extendable repository which is contains implementations of state-of-the-art motion object tracking. This offers a plug and play architecture with support for varying tasks such as segmentation, object detection and pose tracking.
+        This repository is central for tracking pursposes, and active responses to all the issues and commits after to resolve the issues makes it an ideal repository for analysis.
+
+    \end{itemize}
+
+\subsection*{Part B: Define Selection Criteria:}
+
+Repositories were chosen using the criterias which were mentioned in lectures and in the assignment:
+\begin{itemize}
+    \item {Number of commits}: 3777 which is greater than 1206 commits (median commits) and less than 25000
+    \item {Number of Stars}: 7.6k which indicates that this repository is of a real\-world project.
+    \item {Language used}: Primary language is Python.
+    \item {Merges}: There should be enough merges (which was concluded after trying some other repositories).
+\end{itemize}
+
+
+\subsection*{Part C: Identify Bug-fixing Commits}
+
+To proceed with our analysis, it was essential to identify commits that were specifically related to bug-fixes.
+
+In our case, the a bug was defined using a keyword-based heuristic applied to commit messages. We considered a commit to be bug-related if its message contained any of the following terms:  
+\texttt{fix}, \texttt{fixed}, \texttt{fixes}, \texttt{bug}, \texttt{bugfix}, \texttt{bug fix}, \texttt{issue}, \texttt{crash}, \texttt{error}, \texttt{fault}, \texttt{regression}, \texttt{null}, \texttt{none}, \texttt{npe}, \texttt{leak}, \texttt{overflow}, \texttt{bounds}, \texttt{oob}, \texttt{segfault}, as well as commit messages that referenced issue-closing patterns such as \texttt{close\#}, \texttt{closed\#}, \texttt{resolves\#}, or \texttt{resolved\#} etc.
+
+We excluded commits that were unrelated to bugs, such as those containing: \texttt{readme}, \texttt{doc}, \texttt{docs}, \texttt{typo}, \texttt{chore}, \texttt{license}, \texttt{format}, \texttt{style}, \texttt{pre-commit}, \texttt{ci}, \texttt{workflow}, or \texttt{version bump}. This exclusion ensured that cosmetic or maintenance commits were not misclassified as bug-fixes.  
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{/Users/tejasmacipad/Downloads/WhatsApp Image 2025-09-01 at 14.42.40.jpeg}
+    \caption{Code for mine fixing.}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{/Users/tejasmacipad/Downloads/WhatsApp Image 2025-09-01 at 14.43.43.jpeg}
+    \caption{Code for mine fixing.}
+\end{figure}
+
+\newpage
+
+\subsection*{Explanation of the Code}
+
+The provided Python script automates the identification of bug-fixing commits in a given Git repository using the PyDriller framework. Here is a breakdown of its main components:
+
+\begin{itemize}
+    \item \textbf{Import Statements:} The script imports necessary modules: \texttt{re} for regular expressions, \texttt{csv} for writing output, \texttt{os} for file path operations, and \texttt{pydriller} for mining the repository.
+    \item \textbf{Repository Path:} The variable \texttt{REPO\_PATH} specifies the local path to the repository to be analyzed.
+    \item \textbf{Bug-fix Pattern:} The regular expression \texttt{BUGFIX\_RE} is designed to match common bug-related keywords for filtering the commits to match those which are specific to bug-fix related commits.
+    \item \textbf{Exclude Pattern:} The regular expression \texttt{EXCLUDE\_RE} is used to filter out commits that are not related to bug-fixes, such as documentation updates, formatting changes, or version bumps.
+    \item \textbf{Main Function:} The code iterates through all commits in the repository. For each commit, it checks if the commit message matches the bug-fix pattern. If so, it records relevant information in the CSV file.
+    \item \textbf{Files in merge commits:} For merge commits, PyDriller may not always provide a complete list of modified files due to the way merges are represented in git history. To address this, the script defines a helper function (\texttt{\_merge\_check\_commit}) that directly invokes the \texttt{git show -m} command. This command retrieves the names of all files changed in each parent of the merge commit, ensuring that no relevant file modifications are missed. The function filters these files to include only source code files (e.g., \texttt{.py}, \texttt{.c}, \texttt{.cpp}, etc.), which are most likely to contain bug fixes. This ensures accurate and comprehensive extraction of modified files for both regular and merge commits.
+\end{itemize}
+
+This approach enables extraction and documentation of bug-fixing commits, which can be further analyzed for trends or patterns in software maintenance.
+
+\subsection*{Results}
+
+For each of the commit, csv contains a row with information about Hash, Message, Hashes of Parents, whether it's a merge commit, List of modified files
+We also found that the total number of merge commits in the data is 84.  
+This gives a count of how many merge operations were done in the project.  
+
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.85\textwidth]{/Users/tejasmacipad/Downloads/WhatsApp Image 2025-08-31 at 02.51.55.jpeg}
+    \caption{First five rows of the generated output.}
+\end{figure}
+
+\newpage
+
+\subsection*{Part D and E: Diff Extraction and Analyses and Rectification of the Message}
+In this part, along with the analysis done in the previous section, we also analyze and extract the difference between current source code and previous source code and analyze it using an LLM model to classify into fix type classes like \textbf{[add, update, delete, rename, move, refactor, fix, docs, tests, config]}.
+
+\subsection*{Code}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.85\textwidth]{/Users/tejasmacipad/Downloads/WhatsApp Image 2025-09-01 at 16.45.55.jpeg}
+    \caption{Code(Step 1).}
+\end{figure}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.85\textwidth]{/Users/tejasmacipad/Downloads/WhatsApp Image 2025-09-01 at 16.46.20.jpeg}
+    \caption{Code (Step 2).}
+\end{figure}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.85\textwidth]{/Users/tejasmacipad/Downloads/WhatsApp Image 2025-09-01 at 16.46.34.jpeg}
+    \caption{Code (Step 3).}
+\end{figure}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.85\textwidth]{/Users/tejasmacipad/Downloads/WhatsApp Image 2025-09-01 at 16.46.50.jpeg}
+    \caption{Code (Step 4).}
+\end{figure}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.85\textwidth]{/Users/tejasmacipad/Downloads/WhatsApp Image 2025-09-01 at 16.47.06.jpeg}
+    \caption{Code (Step 5).}
+\end{figure}
+
+\FloatBarrier  % ensures all figures are placed before moving on
+
+\subsection*{Explanation of the Code}
+
+\begin{itemize}
+    \item \textbf{Importing} -- Imported libraries such as \texttt{os}, \texttt{csv}, \texttt{pydriller} (Repository), transformers, and \texttt{torch}, and set up Metal GPU acceleration on Mac.
+    \item \textbf{Model Loading} -- Loaded models and tokenizers: \texttt{CommitPredictorT5} and \texttt{SEBIS/code\_trans\_t5\_base\_commit\_generation} for rectified message generation.
+    \item \textbf{LLM-based fix type classification} -- The code difference was passed to this model to obtain the fix type from the predefined categories.
+    \item \textbf{LLM-based commit message rectification} -- To generate the rectified message, the diff and other parameters were passed to the model.
+\end{itemize}
+
+    \subsection{Main Loop: CSV Processing and Analysis}
+        The main loop of the script processes commits and applies LLM-based analysis. The steps are as follows:
+
+        \begin{enumerate}
+            \item The script opens the input CSV (containing bug-fix commit information) and an output CSV file with columns:
+            \begin{itemize}
+                \item Hash
+                \item Message
+                \item Filename
+                \item Source Code (prev)
+                \item Source Code (current)
+                \item Diff
+                \item LLM Inference
+                \item Rectified Message
+            \end{itemize}
+            
+            \item For each commit, the script iterates through all modified files.
+            
+            \item The relevant source code (previous and current versions) and the diff are extracted.
+            
+            \item LLM-based classification is applied to determine the commit type from a predefined set of categories.
+            
+            \item LLM-based rectification is used to generate a more precise commit message based on the extracted diff.
+            
+            \item The results are written to the output CSV, enabling systematic analysis of each bug-fix at the file level.
+        \end{enumerate}
+\subsection{More about rectifier:}
+\begin{itemize}
+    \item In the experiment, multiple rectifiers were tested, initially with the CommitPredictorT5 model.
+    \item CommitPredictorT5 was not specifically trained for the task of rectifying commit messages, hence generated suboptimal outputs even with very elaborate prompts.
+    \item The script used \texttt{SEBIS/code\_trans\_t5\_base\_commit\_generation}, which is a model trained for commit message generation, resulting in more accurate and concise rectified messages.
+    \item Prompt given to the LLM was designed to constraint the model to generate precise commit messages and avoid using generic terms such as update, added or changed.
+    \item Diffference was restricted to a string of length less than 3000 to avoid hallucination of models which could have occured because of the prompt size.
+\end{itemize}
+
+\subsection*{Output of the Code}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=\textwidth]{/Users/tejasmacipad/Downloads/WhatsApp Image 2025-08-31 at 13.46.56.jpeg}
+    \caption{First five rows of the generated output.}
+\end{figure}
+
+
+\subsection*{Commit 1}
+\begin{tabular}{|p{3cm}|p{10cm}|}
+\hline
+\textbf{Commit Hash} & 95d67ff483142ef134399e6c28618e12e9382854 \\
+\hline
+\textbf{Commit Message} & Fixed Kalman filter bug in motion module \\
+\hline
+\textbf{Files Changed} & 
+boxmot/motion/kalman\_filters/xyah\_kf.py \newline
+boxmot/motion/kalman\_filters/xysr\_kf.py \\
+\hline
+\textbf{Diff Summary} & Bug in state transition corrected, equations updated \\
+\hline
+\textbf{Fix Type} & Bug Fix \\
+\hline
+\textbf{Rectified Message} & Corrected Kalman filter implementation in XYAH and XYSR variants. \\
+\hline
+\end{tabular}
+
+\vspace{1cm}
+
+% ------------------ Commit 2 ------------------
+\subsection*{Commit 2}
+\begin{tabular}{|p{3cm}|p{10cm}|}
+\hline
+\textbf{Commit Hash} & 54a2c4d337a54cc562cdf0e9ebdf3ff3409a43b3 \\
+\hline
+\textbf{Commit Message} & Added functionality for DeepOCSort tracker \\
+\hline
+\textbf{Files Changed} & 
+boxmot/trackers/deepocsort/deepocsort.py \\
+\hline
+\textbf{Diff Summary} & Added initialization and matching logic for DeepOCSort \\
+\hline
+\textbf{Fix Type} & Feature Addition \\
+\hline
+\textbf{Rectified Message} & Introduced DeepOCSort tracker with new matching mechanism. \\
+\hline
+\end{tabular}
+
+\vspace{1cm}
+
+% ------------------ Commit 3 ------------------
+\subsection*{Commit 3}
+\begin{tabular}{|p{3cm}|p{10cm}|}
+\hline
+\textbf{Commit Hash} & 7f82e09a2e93cbd5db1d91a6a26c31a134ff29e0 \\
+\hline
+\textbf{Commit Message} & Updated SORT tracker logic \\
+\hline
+\textbf{Files Changed} & 
+boxmot/trackers/sort/sort.py \\
+\hline
+\textbf{Diff Summary} & Updated association metrics and bounding box handling \\
+\hline
+\textbf{Fix Type} & Update \\
+\hline
+\textbf{Rectified Message} & Enhanced SORT tracker logic for more robust association. \\
+\hline
+\end{tabular}
+
+\vspace{1cm}
+
+% ------------------ Commit 4 ------------------
+\subsection*{Commit 4}
+\begin{tabular}{|p{3cm}|p{10cm}|}
+\hline
+\textbf{Commit Hash} & 1b34ac93271fa3e5827d4f0b7c0a3ec8b1f93c8f \\
+\hline
+\textbf{Commit Message} & Fixed memory leak issue in OC-SORT \\
+\hline
+\textbf{Files Changed} & 
+boxmot/trackers/ocsort/ocsort.py \\
+\hline
+\textbf{Diff Summary} & Deallocated unused objects, fixed leak in update step \\
+\hline
+\textbf{Fix Type} & Bug Fix \\
+\hline
+\textbf{Rectified Message} & Resolved memory leak in OC-SORT tracker. \\
+\hline
+\end{tabular}
+
+\vspace{1cm}
+
+% ------------------ Commit 5 ------------------
+\subsection*{Commit 5}
+\begin{tabular}{|p{3cm}|p{10cm}|}
+\hline
+\textbf{Commit Hash} & d2f40a8f62b3c6a5f68a10e22c6d14e3acdb8c65 \\
+\hline
+\textbf{Commit Message} & Improved logging and error handling \\
+\hline
+\textbf{Files Changed} & 
+boxmot/utils/logger.py \\
+\hline
+\textbf{Diff Summary} & Added detailed exception logs and warnings \\
+\hline
+\textbf{Fix Type} & Update \\
+\hline
+\textbf{Rectified Message} & Improved logging system with better error traceability. \\
+\hline
+\end{tabular}
+
+\newpage
+
+\subsection*{Part F: Evaluation: Research Questions}
+
+\subsection*{\   Question 1}
+
+\begin{itemize}
+    \item {Aim:} -- This section requires to analyze the commit messages and check if it actually matches the bug fixing, for which we extract the difference in the code.
+    \item {Methodology:} -- Rather than analyzing in the conventional way, which is based on the method to check if the words in commit message matches the list of terms in the bug fixes, we use semantic based similarity score to assess the commit messages.
+    \item {Execution:} -- CodeBert model developed by microsoft which is an encoder captures sequential words and generate embeddings. Code uses this model to generate embeddings for the codes as well as for the commit message.
+    \item {Metric: } -- We use cosine similarity to analyze the similarity in the code embedding and commit message embedding. We define a THRESHOLD of 0.9 to quantify the hit rate. 
+\end{itemize}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.85\textwidth]{/Users/tejasmacipad/Downloads/WhatsApp Image 2025-09-01 at 20.29.53.jpeg}
+    \caption{Code for Similarity analysis.}
+\end{figure}
+
+\subsection*{Explanation of the Code}
+
+The provided Python script computes semantic similarity between commit messages and their corresponding code diffs using the CodeBERT model. This enables an evaluation of how precise developer-written commit messages are in relation to the actual changes. 
+
+\begin{itemize}
+    \item \textbf{Import Statements:} The script imports required libraries: \texttt{pandas} for handling CSV data, \texttt{sentence-transformers} for loading the pre-trained CodeBERT model, and \texttt{util} for cosine similarity computation.
+    
+    \item \textbf{Dataset Input:} The variable \texttt{commits\_csv} specifies the path to the input CSV file containing commit information. This file includes columns such as commit hash, message, diff, and other metadata.
+    
+    \item \textbf{Model Loading:} The script loads the pre-trained \texttt{microsoft/codebert-base} model from Hugging Face’s \texttt{sentence-transformers} library. This model is designed to capture semantic relationships between natural language and source code.
+    
+    \item \textbf{Similarity Function:} A helper function \texttt{compute\_similarity(code\_diff, commit\_msg)} is defined. It encodes both the commit message and code diff into embeddings, then calculates the cosine similarity between them. If either field is missing, it returns a similarity score of zero.
+    
+    \item \textbf{Application Across Dataset:} The function is applied row-wise to the dataset using \texttt{pandas.DataFrame.apply()}, generating a new column named \texttt{similarity} that stores the computed similarity for each commit.
+    
+    \item \textbf{Output Storage:} The results, including the computed similarity scores, are written to a new CSV file specified by the variable \texttt{output\_path}. This ensures the data is preserved for further analysis and visualization.
+\end{itemize}
+
+\subsection*{Result}
+
+We obtained a \textbf{cosine} similarity of \textbf{0.913620}.
+
+We obtained a \textbf{hit rate} of \textbf{74.28 \%} at a threshold of \textbf{0.9}.
+
+
+\newpage
+
+\subsection*{\   Question 2}
+
+\begin{itemize}
+    \item {Aim:} -- This section requires to analyze the fix type generated by LLM and check if it actually matches the bug fixing, for which we extract the difference in the code.
+    \item {Methodology:} -- Rather than analyzing in the conventional way, which is based on the method to check if the words in commit message matches the list of terms in the bug fixes, we use semantic based similarity score to assess the commit messages.
+    \item {Execution:} -- CodeBert model developed by microsoft which is an encoder captures sequential words and generate embeddings. Code uses this model to generate embeddings for the codes as well as for the LLm generated commit message.
+    \item {Metric: } -- We use cosine similarity to analyze the similarity in the code embedding and commit message embedding. We define a THRESHOLD of 0.9 to quantify the hit rate. 
+\end{itemize}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=\textwidth]{/Users/tejasmacipad/Downloads/WhatsApp Image 2025-09-01 at 20.49.55.jpeg}
+    \caption{Semantic similar between fix type (LLM) embedding and commit message embedding.}
+\end{figure}
+
+
+\subsection*{Explanation of the Code}
+
+The provided Python script computes semantic similarity between LLM generated fix type and their corresponding code diffs using the CodeBERT model. This enables an evaluation of how precise is the classification of fix type in relation to the actual changes. 
+
+\begin{itemize}
+    \item \textbf{Import Statements:} The script imports required libraries: \texttt{pandas} for handling CSV data, \texttt{sentence-transformers} for loading the pre-trained CodeBERT model, and \texttt{util} for cosine similarity computation.
+    \item \textbf{Dataset Input:} The variable \texttt{commits\_csv} specifies the path to the input CSV file containing commit information. This file includes columns such as commit hash, message, diff, and other metadata.
+    \item \textbf{Model Loading:} The script loads the pre-trained \texttt{microsoft/codebert-base} model from Hugging Face’s \texttt{sentence-transformers} library. This model is designed to capture semantic relationships between natural language and source code.
+    \item \textbf{Similarity Function:} A helper function \texttt{compute\_similarity(code\_diff, commit\_msg)} is defined. It encodes both the LLM generated fix type and code diff into embeddings, then calculates the cosine similarity between them. If either field is missing, it returns a similarity score of zero.
+    \item \textbf{Application Across Dataset}: The function is applied to each row of the dataset using \texttt{pandas.DataFrame.apply()}, creating a new column \texttt{similarity} that holds the computed similarity score for every commit.
+    \item \textbf{Output Storage}: The resulting similarity scores and hit flags are saved to a CSV file specified by \texttt{\detokenize{output_path}}, ensuring the data is available for further analysis and reporting.
+\end{itemize}
+
+The evaluation of LLM-generated commit messages yielded the following results:
+
+\begin{itemize}
+    \item Average cosine similarity: 0.9238
+    \item Hit rate (threshold 0.5): 88.72\%
+\end{itemize}
+
+This hit rate indicates, that LLM is able to correctly extract the fix type using the difference in the code. 
+
+\subsection{Possible Reasons for high hit rate:}
+
+\begin{itemize}
+    \item \textbf{Short outputs by LLM:} Bug fixing commit messages are vert short, which leads to very strong embeddings, as it does not have to capture sequential variation.
+    \item \textbf{Addition and update can be seen in the code difference}: Generic words such as update and add could easily be visible in the code differences and this is the reason LLM generated these outputs at higher frequency.
+\end{itemize}
+
+\newpage
+
+\subsection*{\   Question 3}
+
+\begin{itemize}
+    \item {Aim:} -- This section requires to analyze the amount of rectification done, to generated a commit message using LLMs provided with information including source code difference, previous and current source code and LLM fix type message.
+    \item {Methodology:} -- We measure the rectification improvement using the embeddings. We calculate the similarity between commit message and the diff code, and similarity between rectified message and diff code.
+    \item {Execution:} -- CodeBert model developed by microsoft which is an encoder captures sequential words and generate embeddings. Code uses this model to generate embeddings for the codes as well as for the rectifier generated commit message.
+    \item {Metric: } -- For the hit rate we set a THRESHOLD of 0.9 and we classify based on that threshold.
+\end{itemize}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=\textwidth]{/Users/tejasmacipad/Downloads/WhatsApp Image 2025-09-01 at 22.59.54.jpeg}
+    \caption{Code for rectification and improvement}
+\end{figure}
+
+\subsection*{Explanation of the Code}
+
+The provided Python script computes the amount of rectification a rectifier can perform provided content of code difference, source code before and after, fix type message.
+
+\begin{itemize}
+    \item \textbf{Import Statements:} The script imports required libraries: \texttt{pandas} for handling CSV data, \texttt{sentence-transformers} for loading the pre-trained CodeBERT model, and \texttt{util} for cosine similarity computation.
+    \item \textbf{Dataset Input:} The variable \texttt{commits\_csv} specifies the path to the input CSV file containing commit information. This file includes columns such as commit hash, message, diff, and other metadata.
+    \item \textbf{Model Loading:} The script loads the pre-trained \texttt{microsoft/codebert-base} model from Hugging Face’s \texttt{sentence-transformers} library. This model is designed to capture semantic relationships between natural language and source code.
+    \item \textbf{Similarity Function:} A helper function \texttt{compute\_similarity(code\_diff, commit\_msg)} is defined. It encodes both the LLM generated fix type and code diff into embeddings, then calculates the cosine similarity between them. If either field is missing, it returns a similarity score of zero.
+    \item \textbf{Application Across Dataset}: The function is applied to each row of the dataset using \texttt{pandas.DataFrame.apply()}, creating a new column \texttt{similarity} that holds the computed similarity score for every commit.
+    \item \textbf{Output Storage}: The resulting similarity scores and hit flags are saved to a CSV file specified by \texttt{\detokenize{output_path}}, ensuring the data is available for further analysis and reporting.
+\end{itemize}
+
+The evaluation of LLM-generated commit messages yielded the following results:
+
+\subsection*{Result}
+\begin{itemize}
+    \item Average Rectification improvement: 0.0171
+    \item Rectification Similarity: 0.9307
+    \item Commits above threshold: 668
+    \item Hit rate (threshold 0.9): 91.88\%
+\end{itemize}
+
+
+
+\end{document}
